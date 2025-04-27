@@ -1,7 +1,7 @@
 const brevo = require('@getbrevo/brevo');
 
 
-async function enviarCorreoUsuario(data) {
+async function enviarCorreoUsuario(email) {
   try {
     const response = await fetch('https://app.loops.so/api/v1/transactional', {
       method: 'POST',
@@ -11,7 +11,7 @@ async function enviarCorreoUsuario(data) {
       },
       body: JSON.stringify({
         transactionalId: process.env.LOOPS_TEMPLATE_ID ,
-        email: data.email,
+        email: email,
         addToAudience: true
       })
     });
@@ -49,17 +49,17 @@ exports.handler = async (event) => {
 
   try {
 
-    await enviarCorreoUsuario(data);
-
+    
     const apiInstance = new brevo.TransactionalEmailsApi();
     apiInstance.setApiKey(
       brevo.TransactionalEmailsApiApiKeys.apiKey,
       process.env.BREVO_API_KEY
     );
-
+    
     const body = JSON.parse(event.body);
     const { nombre, apellido, email, ciudad, edad, objetivo, categoria } = body;
-
+    
+    await enviarCorreoUsuario(email);
     // 1. Email de notificación al admin
     const notificationEmail = new brevo.SendSmtpEmail();
     Object.assign(notificationEmail, {
