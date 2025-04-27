@@ -59,11 +59,7 @@ exports.handler = async (event) => {
         email: process.env.BREVO_SENDER_EMAIL,
         name: process.env.BREVO_SENDER_NAME,
       },
-      templateId: parseInt(process.env.BREVO_TEMPLATE_ID, 10),
-      params: {
-        nombre,
-        apellido,
-      },
+      templateId: parseInt(process.env.BREVO_TEMPLATE_ID, 2),
     });
 
     await apiInstance.sendTransacEmail(userEmail);
