@@ -1,6 +1,5 @@
 const brevo = require('@getbrevo/brevo');
 
-
 exports.handler = async (event) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -11,7 +10,7 @@ exports.handler = async (event) => {
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers: corsHeaders, body: '' };
   }
-  //ok
+
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -21,82 +20,69 @@ exports.handler = async (event) => {
   }
 
   try {
+    const { nombre, apellido, email, ciudad, edad, objetivo, categoria } = JSON.parse(event.body);
 
-    const apiInstance = new brevo.TransactionalEmailsApi();
-    apiInstance.setApiKey(
+    const brevoApi = new brevo.TransactionalEmailsApi();
+    brevoApi.setApiKey(
       brevo.TransactionalEmailsApiApiKeys.apiKey,
       process.env.BREVO_API_KEY
     );
-    
-    const body = JSON.parse(event.body);
-    const { nombre, apellido, email, ciudad, edad, objetivo, categoria } = body;
+
+    const senderInfo = {
+      email: process.env.BREVO_SENDER_EMAIL,
+      name: process.env.BREVO_SENDER_NAME,
+    };
+
+    const htmlContent = `
+      <h2>Nuevo registro</h2>
+      <p><strong>Nombre:</strong> ${nombre} ${apellido}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Ciudad:</strong> ${ciudad}</p>
+      <p><strong>Edad:</strong> ${edad}</p>
+      <p><strong>Objetivo:</strong> ${objetivo}</p>
+      <p><strong>Categoría:</strong> ${categoria || 'N/A'}</p>
+    `;
 
     // 1. Email de notificación al admin (Technical)
-    const notificationEmail = new brevo.SendSmtpEmail();
-    Object.assign(notificationEmail, {
+    const notificationEmail = new brevo.SendSmtpEmail({
       to: [{ email: process.env.ADMIN_NOTIFICATION_EMAIL, name: 'Equipo Jelpmi' }],
-      sender: {
-        email: process.env.BREVO_SENDER_EMAIL,
-        name: process.env.BREVO_SENDER_NAME,
-      },
+      sender: senderInfo,
       subject: 'Nuevo registro en Jelpmi',
-      htmlContent: `
-        <h2>Nuevo registro</h2>
-        <p><strong>Nombre:</strong> ${nombre} ${apellido}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Ciudad:</strong> ${ciudad}</p>
-        <p><strong>Edad:</strong> ${edad}</p>
-        <p><strong>Objetivo:</strong> ${objetivo}</p>
-        <p><strong>Categoría:</strong> ${categoria || 'N/A'}</p>
-      `,
+      htmlContent,
     });
 
     // 1. Email de notificación al admin (Support)
-    const notificationEmailSupport  = new brevo.SendSmtpEmail();
-    Object.assign(notificationEmailSupport, {
+    const notificationEmailSupport = new brevo.SendSmtpEmail({
       to: [{ email: process.env.SUPPORT_NOTIFICATION_EMAIL, name: 'Equipo Jelpmi' }],
-      sender: {
-        email: process.env.BREVO_SENDER_EMAIL,
-        name: process.env.BREVO_SENDER_NAME,
-      },
+      sender: senderInfo,
       subject: 'Nuevo registro en Jelpmi',
-      htmlContent: `
-        <h2>Nuevo registro</h2>
-        <p><strong>Nombre:</strong> ${nombre} ${apellido}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Ciudad:</strong> ${ciudad}</p>
-        <p><strong>Edad:</strong> ${edad}</p>
-        <p><strong>Objetivo:</strong> ${objetivo}</p>
-        <p><strong>Categoría:</strong> ${categoria || 'N/A'}</p>
-      `,
+      htmlContent,
     });
 
-    await apiInstance.sendTransacEmail(notificationEmail);
-    await apiInstance.sendTransacEmail(notificationEmailSupport);
+    // Enviar correos de notificación
+    await Promise.all([
+      brevoApi.sendTransacEmail(notificationEmail),
+      brevoApi.sendTransacEmail(notificationEmailSupport),
+    ]);
 
-    // 2. Email de bienvenida al usuario
+    // 2. Email de bienvenida al usuario (Loops)
     const response = await fetch('https://app.loops.so/api/v1/transactional', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.LOOPS_API_KEY}`, 
+        'Authorization': `Bearer ${process.env.LOOPS_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        transactionalId: process.env.LOOPS_TEMPLATE_ID ,
-        email: email,
-        addToAudience: true
-      })
+        transactionalId: process.env.LOOPS_TEMPLATE_ID,
+        email,
+        addToAudience: true,
+      }),
     });
 
-    await response.json();
-    /*const userEmail = new brevo.SendSmtpEmail();
-    Object.assign(userEmail, {
-      to: [{ email: email, name: nombre }],
-      subject: '¡Bienvenido a la lista de espera!',
-      templateId: Number(process.env.BREVO_TEMPLATE_ID),
-    });
-
-    await apiInstance.sendTransacEmail(userEmail);*/
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error enviando correo con Loops:', errorData);
+    }
 
     return {
       statusCode: 200,
