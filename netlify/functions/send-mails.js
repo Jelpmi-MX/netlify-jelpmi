@@ -20,7 +20,8 @@ exports.handler = async (event) => {
   }
 
   try {
-    const { nombre, apellido, email, ciudad, edad, objetivo, categoria } = JSON.parse(event.body);
+    const body = JSON.parse(event.body);
+    const { nombre, apellido, email, ciudad, edad, objetivo, categoria } = body;
 
     const brevoApi = new brevo.TransactionalEmailsApi();
     brevoApi.setApiKey(
@@ -44,7 +45,8 @@ exports.handler = async (event) => {
     `;
 
     // 1. Email de notificación al admin (Technical)
-    const notificationEmail = new brevo.SendSmtpEmail({
+    const notificationEmail = new brevo.SendSmtpEmail();
+    Object.assign(notificationEmail, {
       to: [{ email: process.env.ADMIN_NOTIFICATION_EMAIL, name: 'Equipo Jelpmi' }],
       sender: senderInfo,
       subject: 'Nuevo registro en Jelpmi',
@@ -52,25 +54,26 @@ exports.handler = async (event) => {
     });
 
     // 1. Email de notificación al admin (Support)
-    const notificationEmailSupport = new brevo.SendSmtpEmail({
+    const notificationEmailSupport = new brevo.SendSmtpEmail();
+    Object.assign(notificationEmailSupport, {
       to: [{ email: process.env.SUPPORT_NOTIFICATION_EMAIL, name: 'Equipo Jelpmi' }],
       sender: senderInfo,
       subject: 'Nuevo registro en Jelpmi',
       htmlContent,
     });
 
-    // Enviar correos de notificación
+    // Enviar correos de notificación en paralelo
     await Promise.all([
       brevoApi.sendTransacEmail(notificationEmail),
       brevoApi.sendTransacEmail(notificationEmailSupport),
     ]);
 
-    // 2. Email de bienvenida al usuario (Loops)
+    // 2. Email de bienvenida al usuario usando Loops
     const response = await fetch('https://app.loops.so/api/v1/transactional', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${process.env.LOOPS_API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
       },
       body: JSON.stringify({
         transactionalId: process.env.LOOPS_TEMPLATE_ID,
@@ -81,7 +84,7 @@ exports.handler = async (event) => {
 
     if (!response.ok) {
       const errorData = await response.json();
-      console.error('Error enviando correo con Loops:', errorData);
+      console.error('Error enviando correo de bienvenida (Loops):', errorData);
     }
 
     return {
