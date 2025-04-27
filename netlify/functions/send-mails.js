@@ -75,7 +75,7 @@ exports.handler = async (event) => {
     const userEmail = new brevo.SendSmtpEmail();
     Object.assign(userEmail, {
       to: [{ email: email, name: nombre }],
-      subject: '¡Bienvenido a la lista de espera de Jelpmi!',
+      subject: '¡Bienvenido a la lista de espera!',
       templateId: Number(process.env.BREVO_TEMPLATE_ID),
     });
 
