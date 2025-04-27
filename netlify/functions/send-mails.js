@@ -68,6 +68,7 @@ exports.handler = async (event) => {
       `,
     });
 
+    await apiInstance.sendTransacEmail(notificationEmail);
     await apiInstance.sendTransacEmail(notificationEmailSupport);
 
     // 2. Email de bienvenida al usuario
