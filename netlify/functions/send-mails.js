@@ -1,5 +1,33 @@
 const brevo = require('@getbrevo/brevo');
 
+
+async function enviarCorreoUsuario(data) {
+  try {
+    const response = await fetch('https://app.loops.so/api/v1/transactional', {
+      method: 'POST',
+      headers: {
+        'Authorization': process.env.LOOPS_API_KEY, 
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        transactionalId: process.env.LOOPS_TEMPLATE_ID ,
+        email: data.email,
+        addToAudience: true
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      console.error('Error al enviar correo con Loops:', errorData);
+    } else {
+      console.log('Correo enviado correctamente con Loops.');
+    }
+  } catch (error) {
+    console.error('Error en conexión con Loops:', error);
+  }
+}
+
+
 exports.handler = async (event) => {
   const corsHeaders = {
     'Access-Control-Allow-Origin': '*',
@@ -20,6 +48,9 @@ exports.handler = async (event) => {
   }
 
   try {
+
+    await enviarCorreoUsuario(data);
+
     const apiInstance = new brevo.TransactionalEmailsApi();
     apiInstance.setApiKey(
       brevo.TransactionalEmailsApiApiKeys.apiKey,
