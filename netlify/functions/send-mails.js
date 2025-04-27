@@ -35,7 +35,7 @@ exports.handler = async (event) => {
     const response = await fetch('https://app.loops.so/api/v1/transactional', {
       method: 'POST',
       headers: {
-        'Authorization': process.env.LOOPS_API_KEY, 
+        'Authorization': `Bearer ${process.env.LOOPS_API_KEY}`, 
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
