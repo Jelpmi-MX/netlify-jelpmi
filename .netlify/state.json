@@ -1,0 +1,20 @@
+{
+	"geolocation": {
+		"data": {
+			"city": "Mexico City",
+			"country": {
+				"code": "MX",
+				"name": "Mexico"
+			},
+			"subdivision": {
+				"code": "CMX",
+				"name": "Mexico City"
+			},
+			"timezone": "America/Mexico_City",
+			"latitude": 19.3837,
+			"longitude": -99.1757,
+			"postalCode": "03100"
+		},
+		"timestamp": 1745737110392
+	}
+}
