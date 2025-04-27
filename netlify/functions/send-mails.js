@@ -49,7 +49,26 @@ exports.handler = async (event) => {
       `,
     });
 
-    await apiInstance.sendTransacEmail(notificationEmail);
+    const notificationEmailSupport  = new brevo.SendSmtpEmail();
+    Object.assign(notificationEmailSupport, {
+      to: [{ email: process.env.SUPPORT_NOTIFICATION_EMAIL, name: 'Equipo Jelpmi' }],
+      sender: {
+        email: process.env.BREVO_SENDER_EMAIL,
+        name: process.env.BREVO_SENDER_NAME,
+      },
+      subject: 'Nuevo registro en Jelpmi',
+      htmlContent: `
+        <h2>Nuevo registro</h2>
+        <p><strong>Nombre:</strong> ${nombre} ${apellido}</p>
+        <p><strong>Email:</strong> ${email}</p>
+        <p><strong>Ciudad:</strong> ${ciudad}</p>
+        <p><strong>Edad:</strong> ${edad}</p>
+        <p><strong>Objetivo:</strong> ${objetivo}</p>
+        <p><strong>Categoría:</strong> ${categoria || 'N/A'}</p>
+      `,
+    });
+
+    await apiInstance.sendTransacEmail(notificationEmailSupport);
 
     // 2. Email de bienvenida al usuario
     const userEmail = new brevo.SendSmtpEmail();
